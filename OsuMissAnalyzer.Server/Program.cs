@@ -21,4 +21,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 // should probably be configurable. lol.
-app.Run("http://localhost:1234/");
+app.Run("http://0.0.0.0:1234");
