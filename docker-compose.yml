@@ -1,6 +1,10 @@
 ﻿services:
   missanalyzer-server:
     image: missanalyzer-server
+
+    ports:
+      - 1234:1234
+
     build:
       context: .
       dockerfile: OsuMissAnalyzer.Server/Dockerfile
