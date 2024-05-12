@@ -8,6 +8,6 @@ namespace OsuMissAnalyzer.Core
         Replay Replay { get; }
         Beatmap Beatmap { get; }
         ReplayAnalyzer ReplayAnalyzer { get; }
-        ColorScheme ColorScheme { get; }
+        ColourScheme ColourScheme { get; }
     }
 }

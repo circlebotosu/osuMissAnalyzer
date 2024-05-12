@@ -1,0 +1,6 @@
+﻿services:
+  servernew:
+    image: servernew
+    build:
+      context: .
+      dockerfile: ServerNew/Dockerfile

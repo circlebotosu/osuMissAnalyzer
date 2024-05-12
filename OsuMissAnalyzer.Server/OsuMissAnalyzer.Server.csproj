@@ -1,32 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="4.3.0" />
-    <PackageReference Include="DSharpPlus.SlashCommands" Version="4.3.0" />
-    <PackageReference Include="IPAddressRange" Version="5.0.0" />
-    <PackageReference Include="Mono.Posix.NETStandard" Version="5.20.1-preview" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\OsuMissAnalyzer.Core\OsuMissAnalyzer.Core.csproj" />
-    <ProjectReference Include="..\osuReplayAnalyzer\osuDodgyMomentsFinder\osuDodgyMomentsFinder.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <RootNamespace>OsuMissAnalyzer.Server</RootNamespace>
+        <AssemblyName>OsuMissAnalyzer.Server</AssemblyName>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <AssemblyName>MissAnalyzerServer</AssemblyName>
-  </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+    </ItemGroup>
 
-  <Target Name="GetCommit" AfterTargets="Restore" BeforeTargets="Build">
-    <Exec Command="git log -1 &gt; $(ProjectDir)/Resources/GitCommit.txt" />
-  </Target>
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Remove="Resources/GitCommit.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources/GitCommit.txt" />
-  </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\OsuMissAnalyzer.Core\OsuMissAnalyzer.Core.csproj" />
+      <ProjectReference Include="..\osuReplayAnalyzer\osuDodgyMomentsFinder\osuDodgyMomentsFinder.csproj" />
+    </ItemGroup>
 
 </Project>
