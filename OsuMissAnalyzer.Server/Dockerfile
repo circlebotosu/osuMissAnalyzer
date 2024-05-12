@@ -1,23 +1,22 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 1234
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ServerNew/ServerNew.csproj", "ServerNew/"]
-RUN dotnet restore "ServerNew/ServerNew.csproj"
+COPY ["OsuMissAnalyzer.Server/OsuMissAnalyzer.Server.csproj", "OsuMissAnalyzer.Server/"]
+RUN dotnet restore "OsuMissAnalyzer.Server/OsuMissAnalyzer.Server.csproj"
 COPY . .
-WORKDIR "/src/ServerNew"
-RUN dotnet build "ServerNew.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/OsuMissAnalyzer.Server"
+RUN dotnet build "OsuMissAnalyzer.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "ServerNew.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "OsuMissAnalyzer.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ServerNew.dll"]
+ENTRYPOINT ["dotnet", "OsuMissAnalyzer.Server.dll"]

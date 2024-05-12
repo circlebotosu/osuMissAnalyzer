@@ -1,6 +1,6 @@
 ﻿services:
-  servernew:
-    image: servernew
+  missanalyzer-server:
+    image: missanalyzer-server
     build:
       context: .
-      dockerfile: ServerNew/Dockerfile
+      dockerfile: OsuMissAnalyzer.Server/Dockerfile
