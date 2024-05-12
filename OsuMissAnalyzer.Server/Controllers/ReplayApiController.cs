@@ -87,7 +87,7 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
         logger.LogInformation("Uploaded replay {replayId}!", replayId);
         var analyzer = new MissAnalyzer(replayLoader);
         MissAnalyzers[replayId] = analyzer;
-        return Ok("uploaded");
+        return Ok(analyzer.MissCount);
     }
     
     [HttpGet("/api/replay/{replayId}")]
