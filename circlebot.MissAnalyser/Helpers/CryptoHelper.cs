@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Security.Cryptography;
 
-namespace OsuMissAnalyzer.Server.Helpers;
+namespace circlebot.MissAnalyser.Helpers;
 
 // thanks peppy :3
 public abstract class CryptoHelper

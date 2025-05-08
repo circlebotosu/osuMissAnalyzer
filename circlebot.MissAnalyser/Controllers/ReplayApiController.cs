@@ -1,13 +1,13 @@
 using System.Diagnostics;
+using circlebot.MissAnalyser.Helpers;
+using circlebot.MissAnalyser.Models;
 using Microsoft.AspNetCore.Mvc;
 using OsuMissAnalyzer.Core;
-using OsuMissAnalyzer.Server.Helpers;
-using OsuMissAnalyzer.Server.Models;
 using ReplayAPI;
 using SixLabors.ImageSharp;
 using SysFile = System.IO.File;
 
-namespace OsuMissAnalyzer.Server.Controllers;
+namespace circlebot.MissAnalyser.Controllers;
 
 [ApiController]
 [Route("[controller]")]
@@ -15,10 +15,11 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
 {
     private static Dictionary<string, MissAnalyzer> MissAnalyzers { get; } = new();
     private static Rectangle Area => new(0, 0, 512, 512);
-    
-    private readonly string beatmapsPath = Path.Combine(Path.Combine(Environment.CurrentDirectory, ".data"), "osu");
-    private readonly string replaysPath = Path.Combine(Path.Combine(Environment.CurrentDirectory, ".data"), "osr");
-    
+
+    // just link the volume in docker
+    private const string BeatmapsPath = "/beatmaps";
+    private const string ReplaysPath = "/replays";
+
     [HttpPost("/api/replay/{replayId}")]
     public async Task<IActionResult> UploadReplay([FromForm] UploadReplayModel request, [FromRoute]string replayId)
     {
@@ -28,13 +29,13 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             return BadRequest("found");
         }
         
-        if (!Directory.Exists(beatmapsPath) || !Directory.Exists(replaysPath))
+        if (!Directory.Exists(BeatmapsPath) || !Directory.Exists(ReplaysPath))
         {
-            Directory.CreateDirectory(beatmapsPath);
-            Directory.CreateDirectory(replaysPath);
+            Directory.CreateDirectory(BeatmapsPath);
+            Directory.CreateDirectory(ReplaysPath);
         }
         
-        var replayPath = Path.Combine(replaysPath, $"{replayId}.osr");
+        var replayPath = Path.Combine(ReplaysPath, $"{replayId}.osr");
         logger.LogDebug("Replay path: {replayPath}", replayPath);
         if (!SysFile.Exists(replayPath))
         {
@@ -50,12 +51,12 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
         
         if (readAsync != beatmapStream.Length)
         {
-            logger.LogError($"Failed to read beatmap {request.Beatmap.FileName}");
-            return Problem("Failed to read beatmap");
+            logger.LogError("Failed to read beatmap {fileName}", request.Beatmap.FileName);
+            return Problem("beatmap");
         }
         
         var beatmapMd5 = CryptoHelper.GetMd5String(beatmapBytes);
-        var beatmapPath = Path.Combine(beatmapsPath, $"{beatmapMd5}.osu");
+        var beatmapPath = Path.Combine(BeatmapsPath, $"{beatmapMd5}.osu");
         logger.LogDebug("Beatmap path: {beatmapPath}", beatmapPath);
         if (!SysFile.Exists(beatmapPath))
         {

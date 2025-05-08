@@ -3,7 +3,7 @@ using osuDodgyMomentsFinder;
 using OsuMissAnalyzer.Core;
 using ReplayAPI;
 
-namespace OsuMissAnalyzer.Server.Models;
+namespace circlebot.MissAnalyser.Models;
 
 public class ServerReplayLoader : IReplayLoader
 {

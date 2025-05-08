@@ -1,4 +1,4 @@
-﻿namespace OsuMissAnalyzer.Server.Models;
+﻿namespace circlebot.MissAnalyser.Models;
 
 public class UploadReplayModel
 {

@@ -5,8 +5,9 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <RootNamespace>OsuMissAnalyzer.Server</RootNamespace>
-        <AssemblyName>OsuMissAnalyzer.Server</AssemblyName>
+        <RootNamespace>circlebot.MissAnalyser</RootNamespace>
+        <AssemblyName>circlebot.MissAnalyser</AssemblyName>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
