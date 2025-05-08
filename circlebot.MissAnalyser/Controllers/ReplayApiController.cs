@@ -44,24 +44,13 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             await replayStream.CopyToAsync(replayFile);
         }
         
-        await using var beatmapStream = request.Beatmap.OpenReadStream();
-        var beatmapBytes = new byte[beatmapStream.Length];
-        var readAsync = await beatmapStream.ReadAsync(beatmapBytes);
-        beatmapStream.Close();
-        
-        if (readAsync != beatmapStream.Length)
-        {
-            logger.LogError("Failed to read beatmap {fileName}", request.Beatmap.FileName);
-            return Problem("beatmap");
-        }
-        
-        var beatmapMd5 = CryptoHelper.GetMd5String(beatmapBytes);
-        var beatmapPath = Path.Combine(BeatmapsPath, $"{beatmapMd5}.osu");
+        var beatmapPath = Path.Combine(BeatmapsPath, $"{request.BeatmapMd5}.osu");
         logger.LogDebug("Beatmap path: {beatmapPath}", beatmapPath);
         if (!SysFile.Exists(beatmapPath))
         {
-            await using var beatmapFile = SysFile.Create(beatmapPath);
-            await beatmapFile.WriteAsync(beatmapBytes);
+            // with circlebot's setup,
+            // we don't have access to beatmaps from the client.
+            return BadRequest("beatmap");
         }
 
         var replayLoader = new ServerReplayLoader(replayPath, beatmapPath);

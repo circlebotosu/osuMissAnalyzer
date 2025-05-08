@@ -3,5 +3,5 @@
 public class UploadReplayModel
 {
     public IFormFile Replay { get; set; } = null!;
-    public IFormFile Beatmap { get; set; } = null!;
+    public string BeatmapMd5 { get; set; } = null!;
 }
