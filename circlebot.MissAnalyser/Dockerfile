@@ -23,17 +23,17 @@ EXPOSE 1234
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["OsuMissAnalyzer.Server/OsuMissAnalyzer.Server.csproj", "OsuMissAnalyzer.Server/"]
-RUN dotnet restore "OsuMissAnalyzer.Server/OsuMissAnalyzer.Server.csproj"
+COPY ["circlebot.MissAnalyser/circlebot.MissAnalyser.csproj", "circlebot.MissAnalyser/"]
+RUN dotnet restore "circlebot.MissAnalyser/circlebot.MissAnalyser.csproj"
 COPY . .
-WORKDIR "/src/OsuMissAnalyzer.Server"
-RUN dotnet build "OsuMissAnalyzer.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/circlebot.MissAnalyser"
+RUN dotnet build "circlebot.MissAnalyser.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "OsuMissAnalyzer.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "circlebot.MissAnalyser.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "OsuMissAnalyzer.Server.dll"]
+ENTRYPOINT ["dotnet", "circlebot.MissAnalyser.dll"]
