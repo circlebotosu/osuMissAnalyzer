@@ -67,15 +67,14 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             return BadRequest("mods");
         }
 
-        
-        if (replayLoader.Replay.CountMiss == 0)
+        var analyzer = new MissAnalyzer(replayLoader);
+        if (analyzer.MissCount <= 0)
         {
             logger.LogWarning("Rejecting replay {replayId}: no misses", replayId);
             return BadRequest("fc");
         }
 
         logger.LogInformation("Uploaded replay {replayId}!", replayId);
-        var analyzer = new MissAnalyzer(replayLoader);
         MissAnalyzers[replayId] = analyzer;
         return Ok(analyzer.MissCount);
     }
