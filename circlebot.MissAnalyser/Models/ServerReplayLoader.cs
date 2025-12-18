@@ -9,7 +9,7 @@ public class ServerReplayLoader : IReplayLoader
 {
     public Replay Replay { get; set; }
     public Beatmap Beatmap { get; set; }
-    public ColourScheme ColourScheme => ColourScheme.Default;
+    public ColourScheme ColourScheme => ColourScheme.Dark;
     public ReplayAnalyzer ReplayAnalyzer { get; set; }
 
     public ServerReplayLoader(string replayPath, string beatmapPath)

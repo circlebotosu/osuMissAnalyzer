@@ -11,6 +11,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Logging.SetMinimumLevel(
+#if DEBUG
+    LogLevel.Trace
+#else
+    LogLevel.Information
+#endif
+);
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

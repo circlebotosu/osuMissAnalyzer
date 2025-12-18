@@ -2,6 +2,7 @@ using System.Diagnostics;
 using circlebot.MissAnalyser.Helpers;
 using circlebot.MissAnalyser.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using OsuMissAnalyzer.Core;
 using ReplayAPI;
 using SixLabors.ImageSharp;
@@ -13,7 +14,12 @@ namespace circlebot.MissAnalyser.Controllers;
 [Route("[controller]")]
 public class ReplayApiController(ILogger<ReplayApiController> logger) : ControllerBase
 {
-    private static Dictionary<string, MissAnalyzer> MissAnalyzers { get; } = new();
+    private static MemoryCache MissAnalyzers { get; } = new(new MemoryCacheOptions());
+    private static MemoryCacheEntryOptions CacheEntryOptions { get; } = new()
+    {
+        SlidingExpiration = TimeSpan.FromMinutes(10),
+    };
+    
     private static Rectangle Area => new(0, 0, 512, 512);
 
     // just link the volume in docker
@@ -23,7 +29,7 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
     [HttpPost("/api/replay/{replayId}")]
     public async Task<IActionResult> UploadReplay([FromForm] UploadReplayModel request, [FromRoute]string replayId)
     {
-        if (MissAnalyzers.ContainsKey(replayId))
+        if (MissAnalyzers.TryGetValue(replayId, out var analyser) && analyser is not null)
         {
             logger.LogWarning("Rejecting replay {replayId}: already loaded", replayId);
             return BadRequest("found");
@@ -35,13 +41,23 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             Directory.CreateDirectory(ReplaysPath);
         }
         
-        var replayPath = Path.Combine(ReplaysPath, $"{replayId}.osr");
+        await using var replayStream = request.Replay.OpenReadStream();
+        var replayBytes = new byte[replayStream.Length];
+        
+        if (await replayStream.ReadAsync(replayBytes) != replayBytes.Length)
+        {
+            logger.LogWarning("Rejecting replay {replayId}: could not read full stream", replayId);
+            return BadRequest("read");
+        }
+
+        var replayMd5 = CryptoHelper.GetMd5String(replayBytes);
+        var replayPath = Path.Combine(ReplaysPath, $"{replayMd5}.osr");
+        
         logger.LogDebug("Replay path: {replayPath}", replayPath);
         if (!SysFile.Exists(replayPath))
         {
-            await using var replayStream = request.Replay.OpenReadStream();
             await using var replayFile = SysFile.Create(replayPath);
-            await replayStream.CopyToAsync(replayFile);
+            await replayFile.WriteAsync(replayBytes);
         }
         
         var beatmapPath = Path.Combine(BeatmapsPath, $"{request.BeatmapMd5}.osu");
@@ -61,7 +77,7 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             return BadRequest("mode");
         }
         
-        if (replayLoader.Replay.Mods.HasFlag(Mods.Relax | Mods.AutoPilot))
+        if (replayLoader.Replay.Mods.HasFlag(Mods.Relax) && request.IsStable)
         {
             logger.LogWarning("Rejecting replay {replayId}: invalid mods", replayId);
             return BadRequest("mods");
@@ -75,7 +91,7 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
         }
 
         logger.LogInformation("Uploaded replay {replayId}!", replayId);
-        MissAnalyzers[replayId] = analyzer;
+        MissAnalyzers.Set(replayId, analyzer, CacheEntryOptions);
         return Ok(analyzer.MissCount);
     }
     
@@ -85,19 +101,20 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
         var sw = new Stopwatch();
         sw.Start();
         
-        if (!MissAnalyzers.TryGetValue(replayId, out var analyzer))
+        var analyser = MissAnalyzers.Get<MissAnalyzer>(replayId);
+        if (analyser is null)
         {
             logger.LogWarning("Rejecting miss request for {replayId}: not found", replayId);
             return BadRequest("missing");
         }
 
-        if (index < 0 || index >= analyzer.MissCount)
+        if (index < 0 || index >= analyser.MissCount)
         {
             logger.LogWarning("Rejecting miss request for {replayId}: index out of bounds", replayId);
             return BadRequest("index");
         }
         
-        var miss = analyzer.DrawHitObject(index, Area);
+        var miss = analyser.DrawHitObject(index, Area);
         
         if (miss is null)
         {
@@ -116,12 +133,7 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
     [HttpDelete("/api/replay/{replayId}")]
     public IActionResult DeleteReplay([FromRoute]string replayId)
     {
-        if (!MissAnalyzers.Remove(replayId))
-        {
-            logger.LogWarning("Rejecting delete request for {replayId}: not found", replayId);
-            return BadRequest("missing");
-        }
-        
+        MissAnalyzers.Remove(replayId);
         logger.LogInformation("Deleted replay {replayId}", replayId);
         return Ok("deleted");
     }
