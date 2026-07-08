@@ -1,4 +1,5 @@
 using circlebot.MissAnalyser;
+using circlebot.MissAnalyser.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 DotEnv.Load(".env");
 
 builder.Services.AddControllers();
+builder.Services
+    .AddExceptionHandler<ExceptionLoggingHandler>()
+    .AddProblemDetails();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -21,6 +25,8 @@ builder.Logging.SetMinimumLevel(
 
 
 var app = builder.Build();
+
+app.UseExceptionHandler(_ => { });
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
