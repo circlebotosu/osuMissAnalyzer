@@ -55,17 +55,30 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
 
         double? ur = null;
         double? cvUr = null;
-        if (!relax && replay.GameMode == GameModes.osu && first.Analyzer is not null)
+        if (!relax)
         {
-            var errors = first.Analyzer.hits
-                .Select(h => (double)h.frame.Time - h.note.StartTime).ToList();
-            if (errors.Count > 0)
+            var od = first.Beatmap.OverallDifficulty;
+            double[] errors = replay.GameMode switch
+            {
+                GameModes.osu => first.Analyzer?.hits
+                    .Select(h => (double)h.frame.Time - h.note.StartTime).ToArray()
+                    ?? Array.Empty<double>(),
+                GameModes.Taiko => ModeHitErrors.Match(
+                    ModeReplayReader.NoteTimes(first.Beatmap),
+                    ModeReplayReader.TaikoPressTimes(replay.ReplayFrames),
+                    ModeHitErrors.TaikoGreatWindow(od)),
+                GameModes.Mania => ModeHitErrors.Match(
+                    ModeReplayReader.NoteTimes(first.Beatmap),
+                    ModeReplayReader.ManiaPressTimes(replay.ReplayFrames),
+                    ModeHitErrors.ManiaGreatWindow(od)),
+                _ => Array.Empty<double>(), // catch: no UR
+            };
+            if (errors.Length > 0)
             {
                 ur = ReplayStats.UnstableRate(errors);
                 cvUr = ur * clockRate;
             }
         }
-        // taiko/mania UR is wired in Task 8. catch has no UR.
 
         double? medianHoldTime = null;
         if (replay.GameMode == GameModes.osu)
