@@ -51,7 +51,8 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             replay.Mods.HasFlag(Mods.HalfTime));
 
         var frametimes = ReplayFrameStats.Frametimes(replay.ReplayFrames);
-        var avgFrametime = frametimes.Length > 0 ? frametimes.Average() : 0;
+        // median, not mean: the mean is skewed by the long tail of big frame gaps (breaks, spinners, pauses)
+        var avgFrametime = ReplayStats.Median(frametimes);
 
         double? ur = null;
         double? cvUr = null;
@@ -76,7 +77,8 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             if (errors.Length > 0)
             {
                 ur = ReplayStats.UnstableRate(errors);
-                cvUr = ur * clockRate;
+                // converted UR normalises to 1.0x timing: raw real-time UR divided by the clock rate
+                cvUr = ur / clockRate;
             }
         }
 
