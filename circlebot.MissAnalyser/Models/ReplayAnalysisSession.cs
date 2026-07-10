@@ -9,6 +9,7 @@ public class ReplayAnalysisSession
     public double? CvUr { get; init; }
     public double AvgFrametime { get; init; }
     public double? MedianHoldTime { get; init; }
+    public double ClockRate { get; init; } = 1.0;
     public bool Relax { get; init; }
     public bool HasSecondReplay => Second is not null;
 }

@@ -51,8 +51,9 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             replay.Mods.HasFlag(Mods.HalfTime));
 
         var frametimes = ReplayFrameStats.Frametimes(replay.ReplayFrames);
-        // median, not mean: the mean is skewed by the long tail of big frame gaps (breaks, spinners, pauses)
-        var avgFrametime = ReplayStats.Median(frametimes);
+        // Replay frame deltas are in gameplay time, so DT/HT scale them; divide by the clock rate
+        // for real wall-clock frametime. Median, not mean, to shrug off break/spinner gaps.
+        var avgFrametime = ReplayStats.Median(frametimes) / clockRate;
 
         double? ur = null;
         double? cvUr = null;
@@ -100,6 +101,7 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             CvUr = cvUr,
             AvgFrametime = avgFrametime,
             MedianHoldTime = medianHoldTime,
+            ClockRate = clockRate,
             Relax = relax,
         };
         Sessions.Set(sessionId, session, CacheEntryOptions);
@@ -123,7 +125,10 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
         var session = GetSession(sessionId);
         if (session is null)
             return BadRequest("missing");
-        return Ok(new { frametimes = ReplayFrameStats.Frametimes(session.First.Replay.ReplayFrames) });
+        // normalise gameplay-time deltas to real wall-clock time so DT/HT graphs read correctly
+        var frametimes = ReplayFrameStats.Frametimes(session.First.Replay.ReplayFrames)
+            .Select(f => f / session.ClockRate).ToArray();
+        return Ok(new { frametimes });
     }
 
     [HttpGet("/api/replay/analysis/{sessionId}/holdtime")]
