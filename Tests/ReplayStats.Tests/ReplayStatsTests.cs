@@ -143,3 +143,37 @@ public class ModeHitErrorsTests
         Assert.Empty(errors);
     }
 }
+
+public class ModeReplayReaderTests
+{
+    private static ReplayFrame ManiaFrame(int time, int mask) =>
+        new ReplayFrame { Time = time, TimeDiff = 1, X = mask };
+    private static ReplayFrame TaikoFrame(int time, Keys keys) =>
+        new ReplayFrame { Time = time, TimeDiff = 1, Keys = keys };
+
+    [Fact]
+    public void ManiaPressTimes_CountsPerColumnOnsets()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            ManiaFrame(0, 1),
+            ManiaFrame(16, 3),
+            ManiaFrame(40, 0),
+            ManiaFrame(48, 2),
+        };
+        Assert.Equal(new double[] { 0, 16, 48 }, ModeReplayReader.ManiaPressTimes(frames));
+    }
+
+    [Fact]
+    public void TaikoPressTimes_CountsNewKeyBitsWithoutDoubleCounting()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            TaikoFrame(0, Keys.K1),
+            TaikoFrame(16, Keys.K1 | Keys.K2),
+            TaikoFrame(40, Keys.None),
+            TaikoFrame(48, Keys.M1),
+        };
+        Assert.Equal(new double[] { 0, 16, 48 }, ModeReplayReader.TaikoPressTimes(frames));
+    }
+}
