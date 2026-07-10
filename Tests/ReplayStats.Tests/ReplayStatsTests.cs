@@ -112,3 +112,34 @@ public class ReplayFrameStatsTests
         Assert.Equal(new double[] { 0, 16, 48 }, result);
     }
 }
+
+public class ModeHitErrorsTests
+{
+    [Fact]
+    public void TaikoGreatWindow_OD5_Is35()
+    {
+        Assert.Equal(35, ModeHitErrors.TaikoGreatWindow(5), 3);
+    }
+
+    [Fact]
+    public void ManiaGreatWindow_OD5_Is49()
+    {
+        Assert.Equal(49, ModeHitErrors.ManiaGreatWindow(5), 3);
+    }
+
+    [Fact]
+    public void Match_PairsPressesToNotesWithinWindow()
+    {
+        var noteTimes = new double[] { 100, 200 };
+        var pressTimes = new double[] { 105, 190 };
+        var errors = ModeHitErrors.Match(noteTimes, pressTimes, window: 50);
+        Assert.Equal(new double[] { 5, -10 }, errors);
+    }
+
+    [Fact]
+    public void Match_PressOutsideWindow_NotCounted()
+    {
+        var errors = ModeHitErrors.Match(new double[] { 100 }, new double[] { 400 }, window: 50);
+        Assert.Empty(errors);
+    }
+}
