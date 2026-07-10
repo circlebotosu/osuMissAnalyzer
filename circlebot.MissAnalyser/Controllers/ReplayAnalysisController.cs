@@ -102,6 +102,58 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
         });
     }
 
+    [HttpGet("/api/replay/analysis/{sessionId}/frametime")]
+    public IActionResult Frametime([FromRoute] string sessionId)
+    {
+        var session = GetSession(sessionId);
+        if (session is null)
+            return BadRequest("missing");
+        return Ok(new { frametimes = ReplayFrameStats.Frametimes(session.First.Replay.ReplayFrames) });
+    }
+
+    [HttpGet("/api/replay/analysis/{sessionId}/holdtime")]
+    public IActionResult HoldTime([FromRoute] string sessionId)
+    {
+        var session = GetSession(sessionId);
+        if (session is null)
+            return BadRequest("missing");
+        if (session.Mode != "std")
+            return BadRequest("mode");
+        var (k1, k2) = ReplayFrameStats.HoldTimes(session.First.Replay.ReplayFrames);
+        return Ok(new { k1, k2 });
+    }
+
+    [HttpGet("/api/replay/analysis/{sessionId}/compare")]
+    public IActionResult Compare([FromRoute] string sessionId)
+    {
+        var session = GetSession(sessionId);
+        if (session is null)
+            return BadRequest("missing");
+        if (session.Mode != "std")
+            return BadRequest("mode");
+        if (session.Second is null)
+            return BadRequest("missing");
+
+        var comparator = new ReplayComparator(session.First.Replay, session.Second.Replay);
+        var cursorSimilarity = comparator.compareReplays();
+
+        var firstPresses = ReplayFrameStats.PressTimes(session.First.Replay.ReplayFrames);
+        var secondPresses = ReplayFrameStats.PressTimes(session.Second.Replay.ReplayFrames);
+        var count = Math.Min(firstPresses.Length, secondPresses.Length);
+        var tapDiffs = new List<double>(count);
+        for (var i = 0; i < count; i++)
+            tapDiffs.Add(Math.Abs(firstPresses[i] - secondPresses[i]));
+        var keytapSimilarity = ReplayStats.Median(tapDiffs);
+
+        var verdict = (cursorSimilarity, keytapSimilarity) switch
+        {
+            ( < 12, < 15) => "very similar",
+            ( < 30, < 40) => "similar",
+            _ => "distinct",
+        };
+        return Ok(new { cursorSimilarity, keytapSimilarity, verdict });
+    }
+
     private async Task<LoadedReplay?> LoadAsync(IFormFile file, string beatmapMd5)
     {
         await using var stream = file.OpenReadStream();
