@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using circlebot.MissAnalyser.Analysis;
+using ReplayAPI;
 using Xunit;
 
 namespace ReplayAnalysis.Tests;
@@ -47,5 +49,66 @@ public class ReplayStatsTests
     public void Median_EmptyInput_ReturnsZero()
     {
         Assert.Equal(0, ReplayStats.Median(System.Array.Empty<double>()));
+    }
+}
+
+public class ReplayFrameStatsTests
+{
+    private static ReplayFrame Frame(int time, int timeDiff, Keys keys) =>
+        new ReplayFrame { Time = time, TimeDiff = timeDiff, Keys = keys };
+
+    [Fact]
+    public void Frametimes_DropsNonPositiveTimeDiffs()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            Frame(0, -12345, Keys.None),
+            Frame(0, 0, Keys.None),
+            Frame(16, 16, Keys.None),
+            Frame(33, 17, Keys.None),
+        };
+        var result = ReplayFrameStats.Frametimes(frames);
+        Assert.Equal(new double[] { 16, 17 }, result);
+    }
+
+    [Fact]
+    public void HoldTimes_MeasuresPressToRelease_PerKey()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            Frame(0, 1, Keys.K1),
+            Frame(16, 16, Keys.K1 | Keys.K2),
+            Frame(40, 24, Keys.K1),
+            Frame(48, 8, Keys.None),
+        };
+        var (k1, k2) = ReplayFrameStats.HoldTimes(frames);
+        Assert.Equal(new double[] { 48 }, k1);
+        Assert.Equal(new double[] { 24 }, k2);
+    }
+
+    [Fact]
+    public void HoldTimes_UnreleasedKeyAtEnd_Ignored()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            Frame(0, 1, Keys.K1),
+            Frame(16, 16, Keys.K1),
+        };
+        var (k1, _) = ReplayFrameStats.HoldTimes(frames);
+        Assert.Empty(k1);
+    }
+
+    [Fact]
+    public void PressTimes_RecordsEachKeyDownTransition_Sorted()
+    {
+        var frames = new List<ReplayFrame>
+        {
+            Frame(0, 1, Keys.K1),
+            Frame(16, 16, Keys.K1 | Keys.K2),
+            Frame(40, 24, Keys.None),
+            Frame(48, 8, Keys.K1),
+        };
+        var result = ReplayFrameStats.PressTimes(frames);
+        Assert.Equal(new double[] { 0, 16, 48 }, result);
     }
 }
