@@ -24,6 +24,7 @@
     <ItemGroup>
       <ProjectReference Include="..\OsuMissAnalyzer.Core\OsuMissAnalyzer.Core.csproj" />
       <ProjectReference Include="..\osuReplayAnalyzer\osuDodgyMomentsFinder\osuDodgyMomentsFinder.csproj" />
+      <ProjectReference Include="..\circlebot.Analysis\circlebot.Analysis.csproj" />
     </ItemGroup>
 
 </Project>
