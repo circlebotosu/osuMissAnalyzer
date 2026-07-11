@@ -30,8 +30,7 @@ public static class ReplayStats
             : (sorted[mid - 1] + sorted[mid]) / 2.0;
     }
 
-    // Most common value. Robust for frametime where RX/AP inject many spread-out junk
-    // deltas: those never out-pile the one true vsync interval, unlike with the median.
+    // Most common value.
     public static double Mode(IReadOnlyList<double> values)
     {
         if (values.Count == 0)
@@ -41,5 +40,15 @@ public static class ReplayStats
             .OrderByDescending(g => g.Count())
             .ThenBy(g => g.Key)
             .First().Key;
+    }
+
+    // The player's real (gameplay-time) frame interval. RX floods a consistent ~1ms delta and AP
+    // injects many sub-real interpolation frames; both wreck median AND mode. Real vsync frames sit
+    // in a plausible window (~10-250fps), so take the mode there. Fall back to the raw mode only if
+    // the window is empty (genuine ultra-high fps with no injected frames to filter out).
+    public static double RealFrametime(IReadOnlyList<double> frametimes)
+    {
+        var plausible = frametimes.Where(f => f is >= 4 and <= 100).ToList();
+        return Mode(plausible.Count > 0 ? plausible : frametimes);
     }
 }

@@ -51,10 +51,8 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             replay.Mods.HasFlag(Mods.HalfTime));
 
         var frametimes = ReplayFrameStats.Frametimes(replay.ReplayFrames);
-        // Mode, not median: RX/AP inject thousands of spread-out interpolation frames that drag the
-        // median down, but the true vsync interval is still the single most common delta. Then divide
-        // by the clock rate — deltas are gameplay-time, so DT/HT scale them — for real frametime.
-        var avgFrametime = ReplayStats.Mode(frametimes) / clockRate;
+        // RealFrametime filters RX/AP injected frames; divide by clock rate (deltas are gameplay-time).
+        var avgFrametime = ReplayStats.RealFrametime(frametimes) / clockRate;
 
         double? ur = null;
         double? cvUr = null;
@@ -126,8 +124,10 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
         var session = GetSession(sessionId);
         if (session is null)
             return BadRequest("missing");
+        // drop RX/AP injected sub-real frames so the graph shows the true distribution, and
         // normalise gameplay-time deltas to real wall-clock time so DT/HT graphs read correctly
         var frametimes = ReplayFrameStats.Frametimes(session.First.Replay.ReplayFrames)
+            .Where(f => f >= 4)
             .Select(f => f / session.ClockRate).ToArray();
         return Ok(new { frametimes });
     }

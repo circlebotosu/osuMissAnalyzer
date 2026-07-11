@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using circlebot.MissAnalyser.Analysis;
 using ReplayAPI;
 using Xunit;
@@ -62,6 +63,24 @@ public class ReplayStatsTests
     {
         Assert.Equal(0, ReplayStats.Mode(System.Array.Empty<double>()));
     }
+
+    [Fact]
+    public void RealFrametime_IgnoresInjectedLowFramesAndBreakGaps()
+    {
+        // real vsync 25ms buried under RX-style 1ms flood and a break gap
+        var frametimes = new List<double> { 25, 25, 25, 25, 9000 };
+        frametimes.AddRange(Enumerable.Repeat(1.0, 50));
+        Assert.Equal(25, ReplayStats.RealFrametime(frametimes));
+    }
+
+    [Fact]
+    public void RealFrametime_NoPlausibleFrames_FallsBackToRawMode()
+    {
+        // genuine ultra-high fps: nothing in the window, keep the real 2ms
+        var frametimes = new List<double> { 2, 2, 2, 1, 3 };
+        Assert.Equal(2, ReplayStats.RealFrametime(frametimes));
+    }
+
 
 }
 
