@@ -50,6 +50,19 @@ public class ReplayStatsTests
     {
         Assert.Equal(0, ReplayStats.Median(System.Array.Empty<double>()));
     }
+
+    [Fact]
+    public void Mode_ReturnsMostCommonValue()
+    {
+        Assert.Equal(25, ReplayStats.Mode(new double[] { 25, 25, 25, 3, 4, 5, 6, 7 }));
+    }
+
+    [Fact]
+    public void Mode_EmptyInput_ReturnsZero()
+    {
+        Assert.Equal(0, ReplayStats.Mode(System.Array.Empty<double>()));
+    }
+
 }
 
 public class ReplayFrameStatsTests

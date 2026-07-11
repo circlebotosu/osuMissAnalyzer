@@ -51,9 +51,10 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
             replay.Mods.HasFlag(Mods.HalfTime));
 
         var frametimes = ReplayFrameStats.Frametimes(replay.ReplayFrames);
-        // Replay frame deltas are in gameplay time, so DT/HT scale them; divide by the clock rate
-        // for real wall-clock frametime. Median, not mean, to shrug off break/spinner gaps.
-        var avgFrametime = ReplayStats.Median(frametimes) / clockRate;
+        // Mode, not median: RX/AP inject thousands of spread-out interpolation frames that drag the
+        // median down, but the true vsync interval is still the single most common delta. Then divide
+        // by the clock rate — deltas are gameplay-time, so DT/HT scale them — for real frametime.
+        var avgFrametime = ReplayStats.Mode(frametimes) / clockRate;
 
         double? ur = null;
         double? cvUr = null;

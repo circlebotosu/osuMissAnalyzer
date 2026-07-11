@@ -29,4 +29,17 @@ public static class ReplayStats
             ? sorted[mid]
             : (sorted[mid - 1] + sorted[mid]) / 2.0;
     }
+
+    // Most common value. Robust for frametime where RX/AP inject many spread-out junk
+    // deltas: those never out-pile the one true vsync interval, unlike with the median.
+    public static double Mode(IReadOnlyList<double> values)
+    {
+        if (values.Count == 0)
+            return 0;
+        return values
+            .GroupBy(v => v)
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key)
+            .First().Key;
+    }
 }
