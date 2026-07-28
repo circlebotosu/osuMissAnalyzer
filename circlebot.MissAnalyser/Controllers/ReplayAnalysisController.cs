@@ -31,14 +31,14 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
         Directory.CreateDirectory(BeatmapsPath);
         Directory.CreateDirectory(ReplaysPath);
 
-        var first = await LoadAsync(request.Replay, request.BeatmapMd5);
+        var first = await LoadAsync(request.Replay, request.ReplayCacheFile, request.BeatmapMd5);
         if (first is null)
             return BadRequest("beatmap");
 
         LoadedReplay? second = null;
-        if (request.Replay2 is not null && request.BeatmapMd52 is not null)
+        if ((request.Replay2 is not null || request.Replay2CacheFile is not null) && request.BeatmapMd52 is not null)
         {
-            second = await LoadAsync(request.Replay2, request.BeatmapMd52);
+            second = await LoadAsync(request.Replay2, request.Replay2CacheFile, request.BeatmapMd52);
             if (second is null)
                 return BadRequest("beatmap");
         }
@@ -175,11 +175,11 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
         return Ok(new { cursorSimilarity, keytapSimilarity, verdict });
     }
 
-    private async Task<LoadedReplay?> LoadAsync(IFormFile file, string beatmapMd5)
+    private async Task<LoadedReplay?> LoadAsync(IFormFile? file, string? cacheFileName, string beatmapMd5)
     {
-        await using var stream = file.OpenReadStream();
-        var bytes = new byte[stream.Length];
-        _ = await stream.ReadAsync(bytes);
+        var bytes = await ReplayInputHelper.ReadAsync(file, cacheFileName);
+        if (bytes is null)
+            return null;
 
         var md5 = CryptoHelper.GetMd5String(bytes);
         var replayPath = Path.Combine(ReplaysPath, $"{md5}.osr");

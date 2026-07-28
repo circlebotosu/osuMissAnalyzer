@@ -41,12 +41,10 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             Directory.CreateDirectory(ReplaysPath);
         }
         
-        await using var replayStream = request.Replay.OpenReadStream();
-        var replayBytes = new byte[replayStream.Length];
-        
-        if (await replayStream.ReadAsync(replayBytes) != replayBytes.Length)
+        var replayBytes = await ReplayInputHelper.ReadAsync(request.Replay, request.ReplayCacheFile);
+        if (replayBytes is null)
         {
-            logger.LogWarning("Rejecting replay {replayId}: could not read full stream", replayId);
+            logger.LogWarning("Rejecting replay {replayId}: could not read replay data", replayId);
             return BadRequest("read");
         }
 
