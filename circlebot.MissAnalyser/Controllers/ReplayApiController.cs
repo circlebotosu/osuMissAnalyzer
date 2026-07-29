@@ -41,23 +41,15 @@ public class ReplayApiController(ILogger<ReplayApiController> logger) : Controll
             Directory.CreateDirectory(ReplaysPath);
         }
         
-        var replayBytes = await ReplayInputHelper.ReadAsync(request.Replay, request.ReplayCacheFile);
-        if (replayBytes is null)
+        var replayPath = await ReplayInputHelper.ResolvePathAsync(request.Replay, request.ReplayCacheFile, ReplaysPath);
+        if (replayPath is null)
         {
             logger.LogWarning("Rejecting replay {replayId}: could not read replay data", replayId);
             return BadRequest("read");
         }
 
-        var replayMd5 = CryptoHelper.GetMd5String(replayBytes);
-        var replayPath = Path.Combine(ReplaysPath, $"{replayMd5}.osr");
-        
         logger.LogDebug("Replay path: {replayPath}", replayPath);
-        if (!SysFile.Exists(replayPath))
-        {
-            await using var replayFile = SysFile.Create(replayPath);
-            await replayFile.WriteAsync(replayBytes);
-        }
-        
+
         var beatmapPath = Path.Combine(BeatmapsPath, $"{request.BeatmapMd5}.osu");
         logger.LogDebug("Beatmap path: {beatmapPath}", beatmapPath);
         if (!SysFile.Exists(beatmapPath))

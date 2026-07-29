@@ -3,8 +3,9 @@ using SysFile = System.IO.File;
 
 namespace circlebot.MissAnalyser.Helpers;
 
-// Reads replay bytes either from a directly-uploaded multipart file, or from the shared replay
-// cache volume Backend also writes to (avoids re-uploading bytes it already fetched once).
+// Resolves a replay to a file path the third-party parser can read directly. A cache-file
+// reference points straight at the shared replay-cache volume Backend already wrote to - no copy.
+// A direct upload gets written into replaysDirectory once, deduped by content md5.
 public static partial class ReplayInputHelper
 {
     private const string ReplayCachePath = "/replay-cache";
@@ -12,15 +13,16 @@ public static partial class ReplayInputHelper
     [GeneratedRegex(@"^\d+-\d+\.osr$")]
     private static partial Regex CacheFileNameRegex();
 
-    public static async Task<byte[]?> ReadAsync(IFormFile? file, string? cacheFileName)
+    public static async Task<string?> ResolvePathAsync(IFormFile? file, string? cacheFileName,
+        string replaysDirectory)
     {
         if (cacheFileName is not null)
         {
             if (!CacheFileNameRegex().IsMatch(cacheFileName))
                 return null;
 
-            var path = Path.Combine(ReplayCachePath, cacheFileName);
-            return SysFile.Exists(path) ? await SysFile.ReadAllBytesAsync(path) : null;
+            var cachedPath = Path.Combine(ReplayCachePath, cacheFileName);
+            return SysFile.Exists(cachedPath) ? cachedPath : null;
         }
 
         if (file is null)
@@ -29,6 +31,12 @@ public static partial class ReplayInputHelper
         await using var stream = file.OpenReadStream();
         var bytes = new byte[stream.Length];
         _ = await stream.ReadAsync(bytes);
-        return bytes;
+
+        var md5 = CryptoHelper.GetMd5String(bytes);
+        var replayPath = Path.Combine(replaysDirectory, $"{md5}.osr");
+        if (!SysFile.Exists(replayPath))
+            await SysFile.WriteAllBytesAsync(replayPath, bytes);
+
+        return replayPath;
     }
 }

@@ -177,14 +177,9 @@ public class ReplayAnalysisController(ILogger<ReplayAnalysisController> logger) 
 
     private async Task<LoadedReplay?> LoadAsync(IFormFile? file, string? cacheFileName, string beatmapMd5)
     {
-        var bytes = await ReplayInputHelper.ReadAsync(file, cacheFileName);
-        if (bytes is null)
+        var replayPath = await ReplayInputHelper.ResolvePathAsync(file, cacheFileName, ReplaysPath);
+        if (replayPath is null)
             return null;
-
-        var md5 = CryptoHelper.GetMd5String(bytes);
-        var replayPath = Path.Combine(ReplaysPath, $"{md5}.osr");
-        if (!SysFile.Exists(replayPath))
-            await SysFile.WriteAllBytesAsync(replayPath, bytes);
 
         var beatmapPath = Path.Combine(BeatmapsPath, $"{beatmapMd5}.osu");
         if (!SysFile.Exists(beatmapPath))
